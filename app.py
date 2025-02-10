@@ -9,6 +9,10 @@ st.title("Cohere Rerank 模型调试器")
 # Input for API key
 api_key = st.text_input("请输入您的 Cohere API 密钥", type="password")
 
+# Input for model and top_n
+model = st.text_input("请输入模型名称", value="rerank-multilingual-v2.0")
+top_n = st.number_input("请输入返回的 top_n 数量", min_value=1, value=5)
+
 # File uploader for queries and content
 uploaded_file = st.file_uploader("上传一个包含 'query' 和 'content' 列的 CSV 文件", type="csv")
 
@@ -42,16 +46,15 @@ if uploaded_file and api_key:
                 # Prepare the payload for the API request
                 payload = {
                     "query": query,
-                    "documents": contents
+                    "documents": contents,
+                    "model": model,
+                    "top_n": top_n
                 }
                 
                 # Call the Rerank API
                 response = requests.post("https://api.cohere.ai/rerank", headers=headers, json=payload)
                 
                 if response.status_code == 200:
-                    # Debug: Print the full response to check its content
-                    st.write("API Response:", response.json())
-                    
                     # Extract relevance scores
                     scores = response.json().get('results', [])
                     for score in scores:
@@ -78,5 +81,8 @@ if uploaded_file and api_key:
                 file_name='rerank_results.csv',
                 mime='text/csv'
             )
+            
+            # Display API Response at the bottom
+            st.write("API Response:", response.json())
     else:
         st.error("CSV 文件必须包含 'query' 和 'content' 列。") 
