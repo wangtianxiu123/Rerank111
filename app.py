@@ -15,7 +15,7 @@ uploaded_file = st.file_uploader("上传一个包含 'query' 和 'content' 列�
 # Button to download template
 st.download_button(
     label="下载 CSV 模板",
-    data="query,content\n示例查询,示例内容\n",
+    data="query,content\n示例查询,内容段1;内容段2;内容段3\n",
     file_name='template.csv',
     mime='text/csv'
 )
@@ -36,20 +36,23 @@ if uploaded_file and api_key:
             results = []
             for index, row in data.iterrows():
                 query = row['query']
-                content = row['content']
+                # Split content by semicolon to create a list of documents
+                contents = row['content'].split(';')
                 
                 # Prepare the payload for the API request
                 payload = {
                     "query": query,
-                    "documents": [content]
+                    "documents": contents
                 }
                 
                 # Call the Rerank API
                 response = requests.post("https://api.cohere.ai/rerank", headers=headers, json=payload)
                 
                 if response.status_code == 200:
-                    score = response.json().get('results', [{}])[0].get('score', 0)
-                    results.append((query, content, score))
+                    # Assuming the API returns a list of scores for each document
+                    scores = response.json().get('results', [])
+                    for content, score in zip(contents, scores):
+                        results.append((query, content, score.get('score', 0)))
                 else:
                     st.error(f"错误: {response.status_code} - {response.text}")
                     break
