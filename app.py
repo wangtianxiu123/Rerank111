@@ -1,15 +1,24 @@
 import streamlit as st
 import pandas as pd
 import requests
+import io
 
 # Streamlit app title
-st.title("Cohere Rerank Model Debugger")
+st.title("Cohere Rerank 模型调试器")
 
 # Input for API key
-api_key = st.text_input("Enter your Cohere API Key", type="password")
+api_key = st.text_input("请输入您的 Cohere API 密钥", type="password")
 
 # File uploader for queries and content
-uploaded_file = st.file_uploader("Upload a CSV file with 'query' and 'content' columns", type="csv")
+uploaded_file = st.file_uploader("上传一个包含 'query' 和 'content' 列的 CSV 文件", type="csv")
+
+# Button to download template
+st.download_button(
+    label="下载 CSV 模板",
+    data="query,content\n示例查询,示例内容\n",
+    file_name='template.csv',
+    mime='text/csv'
+)
 
 if uploaded_file and api_key:
     # Read the uploaded CSV file
@@ -18,7 +27,7 @@ if uploaded_file and api_key:
     # Check if required columns are present
     if 'query' in data.columns and 'content' in data.columns:
         # Button to trigger rerank
-        if st.button("Rerank"):
+        if st.button("提交"):
             headers = {
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json"
@@ -42,24 +51,24 @@ if uploaded_file and api_key:
                     score = response.json().get('results', [{}])[0].get('score', 0)
                     results.append((query, content, score))
                 else:
-                    st.error(f"Error: {response.status_code} - {response.text}")
+                    st.error(f"错误: {response.status_code} - {response.text}")
                     break
             
             # Create a DataFrame from the results
-            results_df = pd.DataFrame(results, columns=['Query', 'Content', 'Score'])
+            results_df = pd.DataFrame(results, columns=['查询', '内容', '匹配分数'])
             
             # Sort results by score
-            results_df = results_df.sort_values(by='Score', ascending=False)
+            results_df = results_df.sort_values(by='匹配分数', ascending=False)
             
             # Display the results
             st.write(results_df)
             
             # Button to download results
             st.download_button(
-                label="Download results as CSV",
+                label="下载结果为 CSV",
                 data=results_df.to_csv(index=False).encode('utf-8'),
                 file_name='rerank_results.csv',
                 mime='text/csv'
             )
     else:
-        st.error("CSV file must contain 'query' and 'content' columns.") 
+        st.error("CSV 文件必须包含 'query' 和 'content' 列。") 
