@@ -48,13 +48,16 @@ if uploaded_file and api_key:
                 # Call the Rerank API
                 response = requests.post("https://api.cohere.ai/rerank", headers=headers, json=payload)
                 
-                # Debug: Print the full response to check its content
                 if response.status_code == 200:
+                    # Debug: Print the full response to check its content
                     st.write("API Response:", response.json())
-                    # Assuming the API returns a list of scores for each document
+                    
+                    # Extract relevance scores
                     scores = response.json().get('results', [])
-                    for content, score in zip(contents, scores):
-                        results.append((query, content, score.get('score', 0)))
+                    for score in scores:
+                        content_index = score.get('index', 0)
+                        relevance_score = score.get('relevance_score', 0)
+                        results.append((query, contents[content_index], relevance_score))
                 else:
                     st.error(f"错误: {response.status_code} - {response.text}")
                     break
